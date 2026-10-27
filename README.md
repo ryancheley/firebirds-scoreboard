@@ -79,6 +79,11 @@ blank white screen under Wayland. Let the GPU path run.
 A dedicated scoreboard only needs this file; delete it to get the normal desktop
 back.
 
+On an older/slower Pi, Chromium can take 30–60s after boot to paint its first
+frame — the screen may look blank or white in the meantime. That's normal; give
+it time before assuming something's wrong. (Confirm the page itself is fine with
+`curl -s localhost:8000/score`.)
+
 ### 3. Stop the screen from blanking
 
 `xset` does nothing under Wayland. Use `sudo raspi-config` → Display Options →
