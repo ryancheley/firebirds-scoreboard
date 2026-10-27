@@ -40,8 +40,8 @@ curl -s localhost:8000/score            # confirm JSON
 ### 2. Launch Chromium in kiosk mode on boot
 
 Raspberry Pi OS (Bookworm/Trixie) runs Wayland with the **labwc** compositor, so
-the kiosk is started from labwc's autostart script — **as the user that logs into
-the desktop** (not root, even if the server runs as root). Older X11
+the kiosk is started from labwc's autostart script, as the user that logs into
+the desktop (not root, even if the server runs as root). Older X11
 `~/.config/autostart/*.desktop` + `xset` instructions do not apply here.
 
 As the desktop user:
@@ -64,10 +64,14 @@ The binary is `chromium` on Pi OS (not `chromium-browser`). Notes on the flags:
 
 - The `while` loop waits for the server so Chromium doesn't load before the port
   is up (otherwise `--kiosk` shows a blank white page and never retries).
-- Plain `--kiosk <url>` — **not** `--app=`, which renders white under Wayland.
+- Plain `--kiosk <url>`, not `--app=` (which renders white under Wayland).
 - `--password-store=basic` suppresses the gnome-keyring password prompt on boot.
 - `--disable-session-crashed-bubble` avoids the white "restore pages" page after
   an unclean shutdown (e.g. pulling power on the Pi).
+
+Do **not** add `--disable-gpu`: Pi OS wraps Chromium with `--use-angle=gles`
+and `--enable-gpu-rasterization`, and forcing `--disable-gpu` on top produces a
+blank white screen under Wayland. Let the GPU path run.
 
 A dedicated scoreboard only needs this file; delete it to get the normal desktop
 back.
