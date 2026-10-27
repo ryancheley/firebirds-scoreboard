@@ -26,7 +26,10 @@ python3 test_server.py   # self-check for the game-picker / state logic
 
 ## Deploy on the Raspberry Pi
 
-Assumes Raspberry Pi OS with desktop and the repo at `/home/pi/firebirds-scoreboard`.
+Assumes Raspberry Pi OS with desktop. Paths below use `<user>` for your login
+and `<repo>` for the clone location (e.g. `/home/<user>/firebirds-scoreboard`);
+substitute your own. Match the `User=`/`WorkingDirectory=` in `firebirds.service`
+to wherever you cloned it.
 
 ### 1. Run the server on boot (systemd)
 
