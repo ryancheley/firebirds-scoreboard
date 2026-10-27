@@ -6,10 +6,11 @@
 <title>Firebirds Scoreboard</title>
 <style>
   :root {
-    --teal: #0a7d7a;
-    --red: #c8102e;
-    --black: #0b0b0d;
-    --dim: #8a8f98;
+    --teal: #0a7d7a;       /* firebirds background gradient */
+    --accent: #1ff0e4;     /* bright teal for text/accents (high contrast on black) */
+    --red: #ff2a44;        /* brightened red */
+    --black: #000;         /* pure black for max contrast */
+    --dim: #e2e5e9;        /* "secondary" text — still bright enough to read from the sofa */
   }
   * { box-sizing: border-box; margin: 0; }
   html, body { height: 100%; }
@@ -23,24 +24,26 @@
   }
   /* 7" Pi displays are commonly 800x480 */
   #board { width: 100vw; height: 100vh; display: flex; flex-direction: column; }
-  #status { text-align: center; padding: 10px; font-size: 4vh; color: var(--dim);
-            text-transform: uppercase; letter-spacing: 2px; }
+  #status { text-align: center; padding: 6px; font-size: 7vh; font-weight: 700;
+            color: #fff; text-transform: uppercase; letter-spacing: 2px; line-height: 1.05; }
   #teams { flex: 1; display: flex; }
   .side { flex: 1; display: flex; flex-direction: column;
-          align-items: center; justify-content: center; gap: 1vh; }
+          align-items: center; justify-content: center; gap: 1vh; min-width: 0; }
   .side.firebirds { background: linear-gradient(135deg, var(--teal), #063f3e); }
-  .side .code { font-size: 6vh; font-weight: 700; color: var(--dim); }
-  .side.firebirds .code { color: #fff; }
-  .side .name { font-size: 3.5vh; color: var(--dim); text-align: center; padding: 0 2vw; }
-  .side.firebirds .name { color: #cdeceb; }
-  .side .goals { font-size: 34vh; font-weight: 800; line-height: 1; }
-  .divider { width: 2px; background: #222; }
-  #scheduled, #idle { display: none; flex-direction: column;
-                      align-items: center; justify-content: center; gap: 3vh; text-align: center; }
-  #scheduled .vs { font-size: 5vh; color: var(--dim); }
-  #scheduled .opp { font-size: 9vh; font-weight: 800; }
-  #scheduled .when { font-size: 5vh; color: var(--teal); }
-  #idle .logo { font-size: 10vh; font-weight: 800; color: var(--teal); }
+  .side .code { font-size: 13vh; font-weight: 800; color: #fff; }
+  .side .name { font-size: 4.2vh; font-weight: 600; color: var(--dim);
+                text-align: center; padding: 0 1vw; line-height: 1.05; }
+  .side.firebirds .name { color: #fff; }
+  .side .goals { font-size: 46vh; font-weight: 900; line-height: 1; color: #fff; }
+  .divider { width: 3px; background: #333; }
+  #scheduled, #idle { display: none; flex: 1; flex-direction: column;
+                      align-items: center; justify-content: center; gap: 2vh; text-align: center;
+                      padding: 0 3vw; }
+  #scheduled .vs { font-size: 6vh; font-weight: 700; color: #fff;
+                   text-transform: uppercase; letter-spacing: 3px; }
+  #scheduled .opp { font-size: 15vh; font-weight: 900; line-height: 1.0; color: #fff; }
+  #scheduled .when { font-size: 9vh; font-weight: 800; color: var(--accent); }
+  #idle .logo { font-size: 16vh; font-weight: 900; color: var(--accent); }
   /* Goal celebration overlay */
   #goal {
     position: fixed; inset: 0; display: none;
