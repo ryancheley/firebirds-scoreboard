@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Firebirds Scoreboard</title>
+<style>
+  :root {
+    --teal: #0a7d7a;
+    --red: #c8102e;
+    --black: #0b0b0d;
+    --dim: #8a8f98;
+  }
+  * { box-sizing: border-box; margin: 0; }
+  html, body { height: 100%; }
+  body {
+    background: var(--black);
+    color: #fff;
+    font-family: -apple-system, system-ui, "Segoe UI", Roboto, sans-serif;
+    display: flex; align-items: center; justify-content: center;
+    overflow: hidden; cursor: none;
+    -webkit-user-select: none; user-select: none;
+  }
+  /* 7" Pi displays are commonly 800x480 */
+  #board { width: 100vw; height: 100vh; display: flex; flex-direction: column; }
+  #status { text-align: center; padding: 10px; font-size: 4vh; color: var(--dim);
+            text-transform: uppercase; letter-spacing: 2px; }
+  #teams { flex: 1; display: flex; }
+  .side { flex: 1; display: flex; flex-direction: column;
+          align-items: center; justify-content: center; gap: 1vh; }
+  .side.firebirds { background: linear-gradient(135deg, var(--teal), #063f3e); }
+  .side .code { font-size: 6vh; font-weight: 700; color: var(--dim); }
+  .side.firebirds .code { color: #fff; }
+  .side .name { font-size: 3.5vh; color: var(--dim); text-align: center; padding: 0 2vw; }
+  .side.firebirds .name { color: #cdeceb; }
+  .side .goals { font-size: 34vh; font-weight: 800; line-height: 1; }
+  .divider { width: 2px; background: #222; }
+  #scheduled, #idle { display: none; flex-direction: column;
+                      align-items: center; justify-content: center; gap: 3vh; text-align: center; }
+  #scheduled .vs { font-size: 5vh; color: var(--dim); }
+  #scheduled .opp { font-size: 9vh; font-weight: 800; }
+  #scheduled .when { font-size: 5vh; color: var(--teal); }
+  #idle .logo { font-size: 10vh; font-weight: 800; color: var(--teal); }
+  /* Goal celebration overlay */
+  #goal {
+    position: fixed; inset: 0; display: none;
+    align-items: center; justify-content: center;
+    font-size: 22vh; font-weight: 900; letter-spacing: 1vh;
+    background: var(--teal);
+    animation: flash .4s steps(1) infinite;
+  }
+  #goal.show { display: flex; }
+  @keyframes flash {
+    0% { background: var(--teal); }
+    50% { background: var(--red); }
+  }
+</style>
+</head>
+<body>
+  <div id="board">
+    <div id="status">Loading…</div>
+    <div id="teams">
+      <div class="side" id="away">
+        <div class="code"></div><div class="name"></div><div class="goals">0</div>
+      </div>
+      <div class="divider"></div>
+      <div class="side" id="home">
+        <div class="code"></div><div class="name"></div><div class="goals">0</div>
+      </div>
+    </div>
+    <div id="scheduled">
+      <div class="vs">Next game</div>
+      <div class="opp"></div>
+      <div class="when"></div>
+    </div>
+    <div id="idle"><div class="logo">FIREBIRDS</div><div>No upcoming game</div></div>
+  </div>
+  <div id="goal">GOAL!</div>
+
+<script>
+const POLL_MS = 15000;
+let lastGoals = null;      // previous Firebirds goal count
+let seenFirst = false;     // don't celebrate on initial load
+
+const $ = sel => document.querySelector(sel);
+
+function setSide(el, team, isFirebirds) {
+  el.classList.toggle("firebirds", isFirebirds);
+  el.querySelector(".code").textContent = team.code;
+  el.querySelector(".name").textContent = team.name;
+  el.querySelector(".goals").textContent = team.goals;
+}
+
+function show(which) {
+  $("#teams").style.display = which === "game" ? "flex" : "none";
+  $("#scheduled").style.display = which === "scheduled" ? "flex" : "none";
+  $("#idle").style.display = which === "idle" ? "flex" : "none";
+}
+
+function celebrate() {
+  const g = $("#goal");
+  g.classList.add("show");
+  setTimeout(() => g.classList.remove("show"), 5000);
+}
+
+function render(d) {
+  if (d.state === "live" || d.state === "final") {
+    show("game");
+    // visitor on the left, home on the right
+    setSide($("#away"), d.visitor, d.firebirds === "visitor");
+    setSide($("#home"), d.home, d.firebirds === "home");
+    $("#status").textContent =
+      d.state === "final" ? "Final"
+      : `${d.period || ""} ${d.clock || ""}`.trim();
+
+    if (seenFirst && lastGoals !== null && d.firebirdsGoals > lastGoals) celebrate();
+    lastGoals = d.firebirdsGoals;
+    seenFirst = true;
+  } else if (d.state === "scheduled") {
+    show("scheduled");
+    $("#status").textContent = "Coachella Valley Firebirds";
+    $("#scheduled .opp").textContent = (d.atHome ? "vs " : "@ ") + d.opponent;
+    $("#scheduled .when").textContent = `${d.gameDate} · ${d.startTime}`;
+    lastGoals = null; seenFirst = false;
+  } else {
+    show("idle");
+    $("#status").textContent = "Coachella Valley Firebirds";
+    lastGoals = null; seenFirst = false;
+  }
+}
+
+async function tick() {
+  try {
+    const r = await fetch("/score");
+    if (r.ok) render(await r.json());
+    else $("#status").textContent = "Feed unavailable";
+  } catch {
+    $("#status").textContent = "Offline — retrying";
+  }
+}
+
+tick();
+setInterval(tick, POLL_MS);
+</script>
+</body>
+</html>
