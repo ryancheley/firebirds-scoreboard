@@ -4,9 +4,9 @@ After=network-online.target
 Wants=network-online.target
 
 [Service]
-# Adjust User/WorkingDirectory if you cloned somewhere else.
-User=pi
-WorkingDirectory=/home/pi/firebirds-scoreboard
+# Adjust User/WorkingDirectory to match where you cloned the repo.
+User=root
+WorkingDirectory=/root/firebirds-scoreboard
 ExecStart=/usr/bin/python3 server.py
 Restart=always
 RestartSec=5
