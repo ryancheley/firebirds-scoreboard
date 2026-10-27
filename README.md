@@ -39,29 +39,30 @@ curl -s localhost:8000/score            # confirm JSON
 
 ### 2. Launch Chromium in kiosk mode on boot
 
-Create `~/.config/autostart/firebirds-kiosk.desktop`:
+Raspberry Pi OS (Bookworm/Trixie) runs Wayland with the **labwc** compositor, so
+the kiosk is started from labwc's autostart script — **as the user that logs into
+the desktop** (not root, even if the server runs as root). Older X11
+`~/.config/autostart/*.desktop` + `xset` instructions do not apply here.
 
-```ini
-[Desktop Entry]
-Type=Application
-Name=Firebirds Kiosk
-Exec=/usr/bin/chromium-browser --kiosk --app=http://localhost:8000 --incognito --noerrdialogs --disable-infobars --check-for-update-interval=31536000
-X-GNOME-Autostart-enabled=true
+As the desktop user:
+
+```sh
+mkdir -p ~/.config/labwc
+cat > ~/.config/labwc/autostart <<'EOF'
+chromium --kiosk --app=http://localhost:8000 --ozone-platform=wayland --noerrdialogs --disable-infobars &
+EOF
 ```
 
-(On some images the binary is `chromium`, not `chromium-browser`.)
+The binary is `chromium` on Pi OS (not `chromium-browser`). A dedicated
+scoreboard only needs this one line; delete the file to get the normal desktop
+back.
 
 ### 3. Stop the screen from blanking
 
-Add to `/etc/xdg/lxsession/LXDE-pi/autostart` (or your session's autostart):
+`xset` does nothing under Wayland. Use `sudo raspi-config` → Display Options →
+Screen Blanking → **No**.
 
-```
-@xset s off
-@xset -dpms
-@xset s noblank
-```
-
-Reboot. Chromium should come up full-screen on the scoreboard with no cursor.
+Reboot. Chromium should come up full-screen on the scoreboard.
 
 ## Notes / tuning
 
