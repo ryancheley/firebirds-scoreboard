@@ -49,12 +49,27 @@ As the desktop user:
 ```sh
 mkdir -p ~/.config/labwc
 cat > ~/.config/labwc/autostart <<'EOF'
-chromium --kiosk --app=http://localhost:8000 --ozone-platform=wayland --noerrdialogs --disable-infobars &
+# wait until the scoreboard server is answering
+while ! curl -sf http://localhost:8000/score >/dev/null; do sleep 1; done
+chromium --kiosk http://localhost:8000 \
+  --ozone-platform=wayland \
+  --password-store=basic \
+  --disable-session-crashed-bubble \
+  --noerrdialogs --disable-infobars \
+  --start-fullscreen &
 EOF
 ```
 
-The binary is `chromium` on Pi OS (not `chromium-browser`). A dedicated
-scoreboard only needs this one line; delete the file to get the normal desktop
+The binary is `chromium` on Pi OS (not `chromium-browser`). Notes on the flags:
+
+- The `while` loop waits for the server so Chromium doesn't load before the port
+  is up (otherwise `--kiosk` shows a blank white page and never retries).
+- Plain `--kiosk <url>` — **not** `--app=`, which renders white under Wayland.
+- `--password-store=basic` suppresses the gnome-keyring password prompt on boot.
+- `--disable-session-crashed-bubble` avoids the white "restore pages" page after
+  an unclean shutdown (e.g. pulling power on the Pi).
+
+A dedicated scoreboard only needs this file; delete it to get the normal desktop
 back.
 
 ### 3. Stop the screen from blanking
