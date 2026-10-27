@@ -47,6 +47,9 @@ the kiosk is started from labwc's autostart script, as the user that logs into
 the desktop (not root, even if the server runs as root). Older X11
 `~/.config/autostart/*.desktop` + `xset` instructions do not apply here.
 
+Needs `grim` (Wayland screenshot tool) for the self-heal check below:
+`sudo apt-get install -y grim`.
+
 As the desktop user:
 
 ```sh
@@ -54,35 +57,42 @@ mkdir -p ~/.config/labwc
 cat > ~/.config/labwc/autostart <<'EOF'
 # wait until the scoreboard server is answering
 while ! curl -sf http://localhost:8000/score >/dev/null; do sleep 1; done
-chromium --kiosk http://localhost:8000 \
-  --ozone-platform=wayland \
-  --password-store=basic \
-  --disable-session-crashed-bubble \
-  --noerrdialogs --disable-infobars \
-  --start-fullscreen &
+
+# labwc + Chromium bug: the FIRST toplevel on a fresh session renders a stuck
+# white frame and never repaints; relaunching fixes it. So launch, then check
+# the real screen with grim and relaunch until the scoreboard actually paints.
+LAUNCH="chromium --kiosk http://localhost:8000 --ozone-platform=wayland --password-store=basic --disable-session-crashed-bubble --noerrdialogs --disable-infobars --start-fullscreen"
+$LAUNCH &
+for i in $(seq 1 12); do
+  sleep 25
+  grim /tmp/kiosk_check.png 2>/dev/null || continue
+  sz=$(stat -c %s /tmp/kiosk_check.png 2>/dev/null || echo 0)
+  # white ~2KB, desktop wallpaper ~290KB, scoreboard (mostly black) ~15-60KB
+  if [ "$sz" -gt 6000 ] && [ "$sz" -lt 120000 ]; then break; fi
+  pkill chromium; sleep 3; $LAUNCH &
+done
 EOF
 ```
 
-The binary is `chromium` on Pi OS (not `chromium-browser`). Notes on the flags:
+The binary is `chromium` on Pi OS (not `chromium-browser`). Notes:
 
-- The `while` loop waits for the server so Chromium doesn't load before the port
-  is up (otherwise `--kiosk` shows a blank white page and never retries).
-- Plain `--kiosk <url>`, not `--app=` (which renders white under Wayland).
+- The first `while` loop waits for the server so Chromium doesn't load before the
+  port is up.
+- **The self-heal loop is the important part.** On labwc the very first Chromium
+  window comes up as a stuck white frame and never repaints — load settling
+  doesn't help, only a relaunch does. The loop screenshots the screen with `grim`
+  and relaunches until the scoreboard paints (verified on real hardware: a slow
+  Pi reaches the scoreboard unattended ~3–4 min after boot).
+- Plain `--kiosk <url>`, not `--app=` (which also renders white under Wayland).
 - `--password-store=basic` suppresses the gnome-keyring password prompt on boot.
-- `--disable-session-crashed-bubble` avoids the white "restore pages" page after
-  an unclean shutdown (e.g. pulling power on the Pi).
-
-Do **not** add `--disable-gpu`: Pi OS wraps Chromium with `--use-angle=gles`
-and `--enable-gpu-rasterization`, and forcing `--disable-gpu` on top produces a
-blank white screen under Wayland. Let the GPU path run.
+- `--disable-session-crashed-bubble` avoids the "restore pages" page after an
+  unclean shutdown.
+- Do **not** add `--disable-gpu`: Pi OS wraps Chromium with `--use-angle=gles`
+  and `--enable-gpu-rasterization`, and forcing `--disable-gpu` on top is another
+  white-screen cause. Let the GPU path run.
 
 A dedicated scoreboard only needs this file; delete it to get the normal desktop
 back.
-
-On an older/slower Pi, Chromium can take 30–60s after boot to paint its first
-frame — the screen may look blank or white in the meantime. That's normal; give
-it time before assuming something's wrong. (Confirm the page itself is fine with
-`curl -s localhost:8000/score`.)
 
 ### 3. Stop the screen from blanking
 
