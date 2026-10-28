@@ -6,6 +6,7 @@ scorebar feed (the feed sends no browser CORS headers, so we can't fetch it
 straight from the page). No framework, no dependencies.
 """
 import json
+import re
 import urllib.request
 from datetime import datetime, timezone
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -62,6 +63,12 @@ def pick_firebirds_game(games, now):
     return None
 
 
+def big_logo(url):
+    """Feed logos are 50x50 (…/logos/50x50/445.png); the full-res 500x500 lives
+    at …/logos/445.png. Drop the size segment to upgrade."""
+    return re.sub(r"/\d+x\d+/", "/", url) if url else ""
+
+
 def build_score(game):
     """Shape a feed game into the small payload the page consumes."""
     if game is None:
@@ -70,13 +77,13 @@ def build_score(game):
         "name": game["HomeLongName"],
         "code": game["HomeCode"],
         "goals": int(game["HomeGoals"]),
-        "logo": game.get("HomeLogo", ""),
+        "logo": big_logo(game.get("HomeLogo", "")),
     }
     visitor = {
         "name": game["VisitorLongName"],
         "code": game["VisitorCode"],
         "goals": int(game["VisitorGoals"]),
-        "logo": game.get("VisitorLogo", ""),
+        "logo": big_logo(game.get("VisitorLogo", "")),
     }
     firebirds = "home" if TEAM in game["HomeLongName"] else "visitor"
     opponent = visitor if firebirds == "home" else home
