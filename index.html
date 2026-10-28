@@ -30,20 +30,24 @@
   .side { flex: 1; display: flex; flex-direction: column;
           align-items: center; justify-content: center; gap: 1vh; min-width: 0; }
   .side.firebirds { background: linear-gradient(135deg, var(--teal), #063f3e); }
-  .side .code { font-size: 13vh; font-weight: 800; color: #fff; }
+  .side .tlogo { height: 16vh; width: auto; max-width: 42vw; object-fit: contain; }
   .side .name { font-size: 4.2vh; font-weight: 600; color: var(--dim);
                 text-align: center; padding: 0 1vw; line-height: 1.05; }
   .side.firebirds .name { color: #fff; }
-  .side .goals { font-size: 46vh; font-weight: 900; line-height: 1; color: #fff; }
+  .side .goals { font-size: 40vh; font-weight: 900; line-height: 1; color: #fff; }
   .divider { width: 3px; background: #333; }
   #scheduled, #idle { display: none; flex: 1; flex-direction: column;
                       align-items: center; justify-content: center; gap: 2vh; text-align: center;
                       padding: 0 3vw; }
   #scheduled .vs { font-size: 6vh; font-weight: 700; color: #fff;
                    text-transform: uppercase; letter-spacing: 3px; }
-  #scheduled .opp { font-size: 15vh; font-weight: 900; line-height: 1.0; color: #fff; }
-  #scheduled .when { font-size: 9vh; font-weight: 800; color: var(--accent); }
-  #idle .logo { font-size: 16vh; font-weight: 900; color: var(--accent); }
+  #scheduled .matchup { display: flex; align-items: center; justify-content: center; gap: 4vw; }
+  #scheduled .matchup img { height: 26vh; width: auto; object-fit: contain; }
+  #scheduled .matchup .x { font-size: 8vh; font-weight: 800; color: var(--dim); }
+  #scheduled .opp { font-size: 11vh; font-weight: 900; line-height: 1.0; color: #fff; }
+  #scheduled .when { font-size: 8vh; font-weight: 800; color: var(--accent); }
+  #idle .logo-img { height: 40vh; width: auto; object-fit: contain; }
+  #idle .label { font-size: 6vh; font-weight: 700; color: var(--dim); }
   /* Goal celebration overlay */
   #goal {
     position: fixed; inset: 0; display: none;
@@ -64,32 +68,43 @@
     <div id="status">Loading…</div>
     <div id="teams">
       <div class="side" id="away">
-        <div class="code"></div><div class="name"></div><div class="goals">0</div>
+        <img class="tlogo" alt="" onerror="this.style.display='none'"><div class="name"></div><div class="goals">0</div>
       </div>
       <div class="divider"></div>
       <div class="side" id="home">
-        <div class="code"></div><div class="name"></div><div class="goals">0</div>
+        <img class="tlogo" alt="" onerror="this.style.display='none'"><div class="name"></div><div class="goals">0</div>
       </div>
     </div>
     <div id="scheduled">
       <div class="vs">Next game</div>
+      <div class="matchup">
+        <img id="s-fb" alt="" onerror="this.style.display='none'">
+        <span class="x" id="s-x">vs</span>
+        <img id="s-opp" alt="" onerror="this.style.display='none'">
+      </div>
       <div class="opp"></div>
       <div class="when"></div>
     </div>
-    <div id="idle"><div class="logo">FIREBIRDS</div><div>No upcoming game</div></div>
+    <div id="idle"><img class="logo-img" id="idle-logo" alt="" onerror="this.style.display='none'"><div class="label">No upcoming game</div></div>
   </div>
   <div id="goal">GOAL!</div>
 
 <script>
 const POLL_MS = 15000;
+const FB_LOGO = "https://assets.leaguestat.com/ahl/logos/445.png"; // Firebirds, for the idle screen
 let lastGoals = null;      // previous Firebirds goal count
 let seenFirst = false;     // don't celebrate on initial load
 
 const $ = sel => document.querySelector(sel);
 
+function setLogo(el, url) {       // re-show in case a prior load errored out
+  el.style.display = "";
+  el.src = url || "";
+}
+
 function setSide(el, team, isFirebirds) {
   el.classList.toggle("firebirds", isFirebirds);
-  el.querySelector(".code").textContent = team.code;
+  setLogo(el.querySelector("img.tlogo"), team.logo);
   el.querySelector(".name").textContent = team.name;
   el.querySelector(".goals").textContent = team.goals;
 }
@@ -122,12 +137,16 @@ function render(d) {
   } else if (d.state === "scheduled") {
     show("scheduled");
     $("#status").textContent = "Coachella Valley Firebirds";
+    setLogo($("#s-fb"), d.firebirds === "home" ? d.home.logo : d.visitor.logo);
+    setLogo($("#s-opp"), d.firebirds === "home" ? d.visitor.logo : d.home.logo);
+    $("#s-x").textContent = d.atHome ? "vs" : "@";
     $("#scheduled .opp").textContent = (d.atHome ? "vs " : "@ ") + d.opponent;
     $("#scheduled .when").textContent = `${d.gameDate} · ${d.startTime}`;
     lastGoals = null; seenFirst = false;
   } else {
     show("idle");
     $("#status").textContent = "Coachella Valley Firebirds";
+    setLogo($("#idle-logo"), FB_LOGO);
     lastGoals = null; seenFirst = false;
   }
 }

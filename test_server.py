@@ -2,7 +2,7 @@
 """Assert-based self-check for the game picker + state logic. Run: python3 test_server.py"""
 from datetime import datetime, timezone
 
-from server import build_score, game_state, pick_firebirds_game
+from server import big_logo, build_score, game_state, pick_firebirds_game
 
 
 def g(name_home, name_vis, status, iso, hg="0", vg="0", hc="CV", vc="XX"):
@@ -49,5 +49,11 @@ pa = build_score(away)
 assert pa["firebirds"] == "visitor" and pa["atHome"] is False and pa["firebirdsGoals"] == 3
 
 assert build_score(None) == {"state": "none"}
+
+# logo upgrade: strip the size segment for full-res; handle _season variant and empties
+assert big_logo("https://assets.leaguestat.com/ahl/logos/50x50/445.png") == "https://assets.leaguestat.com/ahl/logos/445.png"
+assert big_logo("https://assets.leaguestat.com/ahl/logos/50x50/412_94.png") == "https://assets.leaguestat.com/ahl/logos/412_94.png"
+assert big_logo("") == ""
+assert "50x50" not in big_logo("https://x/ahl/logos/50x50/9.png")
 
 print("ok")
