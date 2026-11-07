@@ -12,6 +12,7 @@ import urllib.request
 from datetime import datetime, timezone
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
+from zoneinfo import ZoneInfo
 
 PORT = 8000
 TEAM = "Firebirds"  # matches HomeLongName / VisitorLongName
@@ -22,6 +23,7 @@ FEED_URL = (
     "&key=ccb91f29d6744675&client_code=ahl"
 )
 HERE = Path(__file__).parent
+PACIFIC = ZoneInfo("America/Los_Angeles")
 
 
 def game_state(game):
@@ -64,6 +66,16 @@ def pick_firebirds_game(games, now):
     return None
 
 
+def pacific_when(game):
+    """Feed date/time strings are venue-local; re-render the start in Pacific
+    as ("Sat, Nov 7", "6:00 pm") to match the feed's own formatting."""
+    t = _dt(game).astimezone(PACIFIC)
+    return (
+        f"{t:%a, %b} {t.day}",
+        f"{t.hour % 12 or 12}:{t:%M} {'am' if t.hour < 12 else 'pm'}",
+    )
+
+
 def big_logo(url):
     """Feed logos are 50x50 (…/logos/50x50/445.png); the full-res 500x500 lives
     at …/logos/445.png. Drop the size segment to upgrade."""
@@ -88,6 +100,7 @@ def build_score(game):
     }
     firebirds = "home" if TEAM in game["HomeLongName"] else "visitor"
     opponent = visitor if firebirds == "home" else home
+    game_date, start_time = pacific_when(game)
     return {
         "state": game_state(game),
         "home": home,
@@ -99,8 +112,8 @@ def build_score(game):
         "period": game.get("PeriodNameLong", ""),
         "clock": game.get("GameClock", ""),
         "dateISO": game.get("GameDateISO8601", ""),
-        "startTime": game.get("ScheduledFormattedTime", ""),
-        "gameDate": game.get("GameDate", ""),
+        "startTime": start_time,
+        "gameDate": game_date,
         "statusString": game.get("GameStatusString", ""),
     }
 
