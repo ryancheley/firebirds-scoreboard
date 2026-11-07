@@ -7,6 +7,7 @@ straight from the page). No framework, no dependencies.
 """
 import json
 import re
+import time
 import urllib.request
 from datetime import datetime, timezone
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -105,7 +106,8 @@ def build_score(game):
 
 
 def fetch_score():
-    with urllib.request.urlopen(FEED_URL, timeout=10) as resp:
+    # ponytail: feed CDN caches for 240s (clock looked frozen); a unique param forces a fresh copy
+    with urllib.request.urlopen(f"{FEED_URL}&_={int(time.time())}", timeout=10) as resp:
         games = json.load(resp)["SiteKit"]["Scorebar"]
     return build_score(pick_firebirds_game(games, datetime.now(timezone.utc)))
 
