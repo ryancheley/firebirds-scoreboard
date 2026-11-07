@@ -50,6 +50,11 @@ assert pa["firebirds"] == "visitor" and pa["atHome"] is False and pa["firebirdsG
 
 assert build_score(None) == {"state": "none"}
 
+# start time shown in Pacific, not venue-local: 7pm MST (Tucson) -> 6pm PST; date can roll back
+assert build_score(g("Tucson Roadrunners", "Coachella Valley Firebirds", "1", "2026-11-07T19:00:00-07:00"))["startTime"] == "6:00 pm"
+late = build_score(g("Coachella Valley Firebirds", "Laval Rocket", "1", "2026-11-08T00:30:00-05:00"))
+assert (late["gameDate"], late["startTime"]) == ("Sat, Nov 7", "9:30 pm")
+
 # logo upgrade: strip the size segment for full-res; handle _season variant and empties
 assert big_logo("https://assets.leaguestat.com/ahl/logos/50x50/445.png") == "https://assets.leaguestat.com/ahl/logos/445.png"
 assert big_logo("https://assets.leaguestat.com/ahl/logos/50x50/412_94.png") == "https://assets.leaguestat.com/ahl/logos/412_94.png"
