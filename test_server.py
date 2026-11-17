@@ -55,10 +55,13 @@ assert build_score(g("Tucson Roadrunners", "Coachella Valley Firebirds", "1", "2
 late = build_score(g("Coachella Valley Firebirds", "Laval Rocket", "1", "2026-11-08T00:30:00-05:00"))
 assert (late["gameDate"], late["startTime"]) == ("Sat, Nov 7", "9:30 pm")
 
-# logo upgrade: strip the size segment for full-res; handle _season variant and empties
-assert big_logo("https://assets.leaguestat.com/ahl/logos/50x50/445.png") == "https://assets.leaguestat.com/ahl/logos/445.png"
-assert big_logo("https://assets.leaguestat.com/ahl/logos/50x50/412_94.png") == "https://assets.leaguestat.com/ahl/logos/412_94.png"
-assert big_logo("") == ""
-assert "50x50" not in big_logo("https://x/ahl/logos/50x50/9.png")
+# logo upgrade: strip the size segment for full-res; drop _94 if that 404s; else keep feed logo
+CDN = {"https://a/logos/445.png", "https://a/logos/402_94.png", "https://a/logos/444.png"}
+has = CDN.__contains__
+assert big_logo("https://a/logos/50x50/445.png", has) == "https://a/logos/445.png"
+assert big_logo("https://a/logos/50x50/402_94.png", has) == "https://a/logos/402_94.png"
+assert big_logo("https://a/logos/50x50/444_94.png", has) == "https://a/logos/444.png"  # Calgary
+assert big_logo("https://a/logos/50x50/9_94.png", has) == "https://a/logos/50x50/9_94.png"
+assert big_logo("", has) == ""
 
 print("ok")

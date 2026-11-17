@@ -5,6 +5,7 @@ Serves index.html and a /score JSON endpoint that proxies the AHL HockeyTech
 scorebar feed (the feed sends no browser CORS headers, so we can't fetch it
 straight from the page). No framework, no dependencies.
 """
+import functools
 import json
 import re
 import time
@@ -76,10 +77,27 @@ def pacific_when(game):
     )
 
 
-def big_logo(url):
+@functools.cache
+def url_exists(url):
+    try:
+        req = urllib.request.Request(url, method="HEAD")
+        with urllib.request.urlopen(req, timeout=5) as resp:
+            return resp.status == 200
+    except OSError:  # URLError, HTTPError (404), timeouts
+        return False
+
+
+def big_logo(url, exists=url_exists):
     """Feed logos are 50x50 (…/logos/50x50/445.png); the full-res 500x500 lives
-    at …/logos/445.png. Drop the size segment to upgrade."""
-    return re.sub(r"/\d+x\d+/", "/", url) if url else ""
+    at …/logos/445.png. The CDN is inconsistent about the _94 season suffix:
+    Calgary has 444.png but not 444_94.png, Bakersfield only 402_94.png. Try
+    both, then fall back to the small feed logo.
+    ponytail: a failed probe (network blip) is cached too; restart to retry."""
+    if not url:
+        return ""
+    big = re.sub(r"/\d+x\d+/", "/", url)
+    no_suffix = re.sub(r"_\d+(\.\w+)$", r"\1", big)
+    return next((u for u in (big, no_suffix) if exists(u)), url)
 
 
 def build_score(game):
